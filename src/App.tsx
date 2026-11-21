@@ -1,18 +1,18 @@
-
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Login from './Login'
 
 interface AnalysisResult {
-  error?: string
-  score?: number
-  explanation?: string
-  redFlags?: string[]
-  trustedSources?: string[]
+  error?: string;
+  score?: number;
+  explanation?: string;
+  redFlags?: string[];
+  trustedSources?: string[];
 }
 
 type InputMode = 'text' | 'url' | 'image'
 
-function HomePage() {
+function App() {
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const [mode, setMode] = useState<InputMode>('text')
   const [content, setContent] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -20,14 +20,31 @@ function HomePage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
 
-  const handleImageChange = (file: File | null) => {
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview)
+  // Check if user is already logged in on page load
+  useEffect(() => {
+    const savedUser = localStorage.getItem('honest_eye_user')
+    if (savedUser) {
+      setUserEmail(savedUser)
     }
+  }, [])
 
+  const handleLogout = () => {
+    localStorage.removeItem('honest_eye_user')
+    setUserEmail(null)
+    setResult(null)
+    setContent('')
+    setImageFile(null)
+    setImagePreview(null)
+  }
+
+  // Show Login page if not authenticated
+  if (!userEmail) {
+    return <Login onLoginSuccess={(email) => setUserEmail(email)} />
+  }
+
+  const handleImageChange = (file: File | null) => {
     setImageFile(file)
     setContent('')
-
     if (file) {
       setImagePreview(URL.createObjectURL(file))
     } else {
@@ -45,28 +62,36 @@ function HomePage() {
     try {
       const apiUrl = import.meta.env.VITE_API_URL?.trim() || 'http://localhost:5000'
       const endpoint = `${apiUrl}/api/misinfo`
-      const payload = { type: mode, content: content.trim() }
-
-      let response: Response
+      const payload: Record<string, unknown> = { type: mode }
 
       if (mode === 'image') {
         const formData = new FormData()
         formData.append('type', 'image')
         formData.append('image', imageFile as Blob)
 
-        response = await fetch(endpoint, {
+        const response = await fetch(endpoint, {
           method: 'POST',
           body: formData,
         })
-      } else {
-        response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        setResult(data)
+        return
       }
+
+      payload.content = content.trim()
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -76,16 +101,9 @@ function HomePage() {
       const data = await response.json()
       setResult(data)
     } catch (error) {
-      const message = error instanceof Error
-        ? error.message
-        : 'Failed to analyze content. Please try again.'
-
+      const message = error instanceof Error ? error.message : 'Failed to analyze content. Please try again.'
       console.error('Error analyzing content:', message)
-
-      setResult({
-        error: message,
-        explanation: 'Failed to analyze content. Please try again.',
-      })
+      setResult({ error: message, explanation: 'Failed to analyze content. Please try again.' })
     } finally {
       setLoading(false)
     }
@@ -94,60 +112,48 @@ function HomePage() {
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-100">
       <div className="absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 opacity-95" />
-
       <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-
         <header className="mb-12 rounded-[3rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl">
-          <div className="mb-6 flex justify-end">
-            <a
-              href="/login"
-              className="rounded-full bg-indigo-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400"
-            >
-              Log in
-            </a>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
+            <span className="inline-flex rounded-full bg-indigo-500/15 px-4 py-2 text-sm font-semibold uppercase tracking-[0.35em] text-indigo-200">
+              HONEST EYE
+            </span>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-slate-300">{userEmail}</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-full border border-white/15 bg-slate-900/80 px-4 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-rose-400/50 hover:text-rose-300"
+              >
+                Logout
+              </button>
+            </div>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-[1.3fr_0.9fr] lg:items-center">
             <div className="space-y-6">
-              <span className="inline-flex rounded-full bg-indigo-500/15 px-4 py-2 text-sm font-semibold uppercase tracking-[0.35em] text-indigo-200">
-                HONEST EYE
-              </span>
-
               <h1 className="text-5xl font-semibold tracking-tight text-white sm:text-6xl">
                 Analyze credibility in seconds.
               </h1>
-
               <p className="max-w-2xl text-lg leading-8 text-slate-300">
-                Verify claims with AI-powered text, URL, and image analysis.
-                Get a credibility score, red flag alerts, and trusted source
-                guidance instantly.
+                Verify claims with AI-powered text, URL, and image analysis. Get a credibility score, red flag alerts, and trusted source guidance instantly.
               </p>
             </div>
-
             <div className="rounded-[2.5rem] bg-slate-900/80 p-8 shadow-xl shadow-indigo-950/30 ring-1 ring-white/10">
-              <p className="text-sm uppercase tracking-[0.35em] text-indigo-300">
-                What you get
-              </p>
-
+              <p className="text-sm uppercase tracking-[0.35em] text-indigo-300">What you get</p>
               <ul className="mt-6 space-y-4 text-sm leading-7 text-slate-300">
                 <li>• Instant misinformation scoring</li>
                 <li>• Adaptive text, link, and image analysis</li>
                 <li>• Actionable red flag insights</li>
               </ul>
-
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-3xl bg-indigo-500/10 p-4">
                   <p className="text-2xl font-semibold text-white">98%</p>
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
-                    Accuracy
-                  </p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Accuracy</p>
                 </div>
-
                 <div className="rounded-3xl bg-slate-900/80 p-4">
                   <p className="text-2xl font-semibold text-white">3 modes</p>
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
-                    Text, URL, Image
-                  </p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Text, URL, Image</p>
                 </div>
               </div>
             </div>
@@ -158,14 +164,9 @@ function HomePage() {
           <section className="rounded-[3rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm uppercase tracking-[0.35em] text-indigo-300">
-                  Analysis mode
-                </p>
-                <h2 className="mt-3 text-3xl font-semibold text-white">
-                  Start a new review
-                </h2>
+                <p className="text-sm uppercase tracking-[0.35em] text-indigo-300">Analysis mode</p>
+                <h2 className="mt-3 text-3xl font-semibold text-white">Start a new review</h2>
               </div>
-
               <div className="rounded-full bg-slate-800/80 px-4 py-2 text-sm text-slate-300 ring-1 ring-white/10">
                 {mode === 'text' ? 'Text analysis' : mode === 'url' ? 'URL analysis' : 'Image analysis'}
               </div>
@@ -198,14 +199,9 @@ function HomePage() {
                 <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-semibold text-slate-200">
-                        Upload image
-                      </label>
-                      <p className="mt-2 text-sm text-slate-400">
-                        Select an image for the AI to inspect the text and claim context.
-                      </p>
+                      <label className="text-sm font-semibold text-slate-200">Upload image</label>
+                      <p className="mt-2 text-sm text-slate-400">Select an image for the AI to inspect the text and claim context.</p>
                     </div>
-
                     <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-950/70 p-8 text-center">
                       <input
                         type="file"
@@ -216,18 +212,12 @@ function HomePage() {
                         }}
                         className="mx-auto block w-full cursor-pointer text-sm text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-indigo-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-400"
                       />
-
-                      <p className="mt-4 text-sm text-slate-500">
-                        PNG, JPG, or WEBP. Max 10MB.
-                      </p>
+                      <p className="mt-4 text-sm text-slate-500">PNG, JPG, or WEBP. Max 10MB.</p>
                     </div>
                   </div>
 
                   <div className="rounded-[2rem] border border-white/10 bg-slate-900 p-4">
-                    <p className="text-sm font-semibold text-slate-200">
-                      Preview
-                    </p>
-
+                    <p className="text-sm font-semibold text-slate-200">Preview</p>
                     {imagePreview ? (
                       <img
                         src={imagePreview}
@@ -244,15 +234,9 @@ function HomePage() {
               ) : (
                 <div>
                   <div className="flex items-center justify-between gap-4">
-                    <label className="text-sm font-semibold text-slate-200">
-                      {mode === 'text' ? 'Enter text' : 'Enter URL'}
-                    </label>
-
-                    <span className="text-xs uppercase tracking-[0.35em] text-slate-500">
-                      Paste your content
-                    </span>
+                    <label className="text-sm font-semibold text-slate-200">{mode === 'text' ? 'Enter text' : 'Enter URL'}</label>
+                    <span className="text-xs uppercase tracking-[0.35em] text-slate-500">Paste your content</span>
                   </div>
-
                   <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
@@ -275,7 +259,6 @@ function HomePage() {
                     ? 'Analyze a website URL for credibility and misinformation risk.'
                     : 'Analyze raw text for misinformation signals and credibility.'}
                 </p>
-
                 <button
                   onClick={handleAnalyze}
                   disabled={loading || (mode !== 'image' ? !content.trim() : !imageFile)}
@@ -290,14 +273,9 @@ function HomePage() {
           <aside className="rounded-[3rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm uppercase tracking-[0.35em] text-indigo-300">
-                  Live verdict
-                </p>
-                <h2 className="mt-3 text-3xl font-semibold text-white">
-                  Analysis panel
-                </h2>
+                <p className="text-sm uppercase tracking-[0.35em] text-indigo-300">Live verdict</p>
+                <h2 className="mt-3 text-3xl font-semibold text-white">Analysis panel</h2>
               </div>
-
               <div className="rounded-full bg-slate-950/80 px-4 py-2 text-sm text-slate-300 ring-1 ring-white/10">
                 {result ? 'Ready' : 'Waiting'}
               </div>
@@ -307,10 +285,7 @@ function HomePage() {
               <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
-                      credibility score
-                    </p>
-
+                    <p className="text-sm uppercase tracking-[0.35em] text-slate-500">credibility score</p>
                     <p className={`mt-3 text-4xl font-semibold ${
                       result?.score !== undefined
                         ? result.score >= 70
@@ -323,7 +298,6 @@ function HomePage() {
                       {result?.score !== undefined ? `${result.score}/100` : '-- /100'}
                     </p>
                   </div>
-
                   <div className={`rounded-full px-4 py-2 text-sm font-semibold ${
                     result?.score !== undefined
                       ? result.score >= 70
@@ -342,7 +316,6 @@ function HomePage() {
                       : 'AWAITING INPUT'}
                   </div>
                 </div>
-
                 <div className="mt-6 h-3 overflow-hidden rounded-full bg-slate-800">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
@@ -354,18 +327,13 @@ function HomePage() {
                           : 'bg-rose-400'
                         : 'bg-slate-700'
                     }`}
-                    style={{
-                      width: `${Math.max(0, Math.min(100, result?.score ?? 0))}%`
-                    }}
+                    style={{ width: `${result?.score ?? 0}%` }}
                   />
                 </div>
               </div>
 
               <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-5">
-                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
-                  status
-                </p>
-
+                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">status</p>
                 <p className="mt-3 text-base leading-7 text-slate-300">
                   {result?.error
                     ? 'The analysis failed. Try again or use different input.'
@@ -377,21 +345,12 @@ function HomePage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-5">
-                  <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
-                    Focus area
-                  </p>
-                  <p className="mt-3 text-base text-slate-300">
-                    {mode === 'image' ? 'Visual claim detection' : mode === 'url' ? 'Link credibility' : 'Text reliability'}
-                  </p>
+                  <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Focus area</p>
+                  <p className="mt-3 text-base text-slate-300">{mode === 'image' ? 'Visual claim detection' : mode === 'url' ? 'Link credibility' : 'Text reliability'}</p>
                 </div>
-
                 <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-5">
-                  <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
-                    Recommended action
-                  </p>
-                  <p className="mt-3 text-base text-slate-300">
-                    {result?.error ? 'Request new analysis' : 'Review results and verify sources'}
-                  </p>
+                  <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Recommended action</p>
+                  <p className="mt-3 text-base text-slate-300">{result?.error ? 'Request new analysis' : 'Review results and verify sources'}</p>
                 </div>
               </div>
             </div>
@@ -402,19 +361,11 @@ function HomePage() {
           <section className="mt-10 rounded-[3rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl">
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="rounded-[2rem] bg-slate-950/80 p-6">
-                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
-                  Analysis details
-                </p>
-                <p className="mt-4 text-sm leading-7 text-slate-300">
-                  {result.explanation || 'Detailed insight will appear here once analysis completes.'}
-                </p>
+                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Analysis details</p>
+                <p className="mt-4 text-sm leading-7 text-slate-300">{result.explanation || 'Detailed insight will appear here once analysis completes.'}</p>
               </div>
-
               <div className="rounded-[2rem] bg-slate-950/80 p-6">
-                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
-                  Red flags
-                </p>
-
+                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Red flags</p>
                 {result.redFlags && result.redFlags.length > 0 ? (
                   <ul className="mt-4 space-y-3 text-sm text-amber-200">
                     {result.redFlags.map((flag, index) => (
@@ -422,17 +373,11 @@ function HomePage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-4 text-sm text-slate-400">
-                    No significant red flags detected.
-                  </p>
+                  <p className="mt-4 text-sm text-slate-400">No significant red flags detected.</p>
                 )}
               </div>
-
               <div className="rounded-[2rem] bg-slate-950/80 p-6">
-                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
-                  Trusted sources
-                </p>
-
+                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Trusted sources</p>
                 {result.trustedSources && result.trustedSources.length > 0 ? (
                   <ul className="mt-4 space-y-3 text-sm text-emerald-200">
                     {result.trustedSources.map((source, index) => (
@@ -440,9 +385,7 @@ function HomePage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-4 text-sm text-slate-400">
-                    No trusted sources available for this analysis.
-                  </p>
+                  <p className="mt-4 text-sm text-slate-400">No trusted sources available for this analysis.</p>
                 )}
               </div>
             </div>
@@ -451,12 +394,6 @@ function HomePage() {
       </div>
     </div>
   )
-}
-
-function App() {
-  return window.location.pathname === '/login'
-    ? <Login />
-    : <HomePage />
 }
 
 export default App
