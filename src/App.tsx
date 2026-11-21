@@ -8,10 +8,8 @@ import {
   Image,
   ArrowRight,
   CheckCircle,
-  AlertTriangle,
   XCircle,
   Loader2,
-  Menu,
   Eye,
   Lock,
   Zap,
@@ -55,14 +53,6 @@ function HomePage() {
     setResult(null)
 
     try {
-      const formData = new FormData()
-
-      if (mode === 'text') {
-        formData.append('text', claim)
-      } else if (file) {
-        formData.append('image', file)
-      }
-
       const response = await fetch('/api/misinfo', {
         method: 'POST',
         headers: mode === 'text'
@@ -70,7 +60,11 @@ function HomePage() {
           : undefined,
         body: mode === 'text'
           ? JSON.stringify({ text: claim })
-          : formData
+          : (() => {
+              const formData = new FormData()
+              if (file) formData.append('image', file)
+              return formData
+            })()
       })
 
       const data = await response.json()
@@ -199,6 +193,7 @@ function HomePage() {
                   </div>
                 </div>
               </div>
+
               <div className="rounded-2xl bg-slate-50 p-4">
                 <div className="flex items-center gap-3">
                   <Image className="text-teal-600" />
@@ -208,6 +203,7 @@ function HomePage() {
                   </div>
                 </div>
               </div>
+
               <div className="rounded-2xl bg-slate-50 p-4">
                 <div className="flex items-center gap-3">
                   <ShieldCheck className="text-teal-600" />
@@ -249,6 +245,7 @@ function HomePage() {
                 >
                   <FileText size={19} /> Text claim
                 </button>
+
                 <button
                   onClick={() => {
                     setMode('image')
@@ -331,7 +328,9 @@ function HomePage() {
                     )}
                     <h3 className="text-xl font-black">{verdict}</h3>
                   </div>
+
                   <p className="mt-4 leading-7 text-slate-600">{explanation}</p>
+
                   {result.confidence !== undefined && (
                     <p className="mt-3 text-sm font-semibold text-slate-500">
                       Confidence: {String(result.confidence)}%
@@ -393,17 +392,25 @@ function HomePage() {
               <div className="rounded-2xl bg-white p-7">
                 <Zap className="text-teal-600" size={30} />
                 <h3 className="mt-4 text-xl font-bold">Simple experience</h3>
-                <p className="mt-2 text-slate-600">A straightforward way to submit information for checking.</p>
+                <p className="mt-2 text-slate-600">
+                  A straightforward way to submit information for checking.
+                </p>
               </div>
+
               <div className="rounded-2xl bg-white p-7">
                 <ShieldCheck className="text-teal-600" size={30} />
                 <h3 className="mt-4 text-xl font-bold">Awareness</h3>
-                <p className="mt-2 text-slate-600">Encourages users to question information before sharing it.</p>
+                <p className="mt-2 text-slate-600">
+                  Encourages users to question information before sharing it.
+                </p>
               </div>
+
               <div className="rounded-2xl bg-white p-7">
                 <BookOpen className="text-teal-600" size={30} />
                 <h3 className="mt-4 text-xl font-bold">Learn and verify</h3>
-                <p className="mt-2 text-slate-600">Understand why checking information matters.</p>
+                <p className="mt-2 text-slate-600">
+                  Understand why checking information matters.
+                </p>
               </div>
             </div>
           </div>
@@ -418,9 +425,11 @@ function HomePage() {
               honest<span className="text-teal-400">eye</span>
             </span>
           </div>
+
           <p className="text-sm text-slate-400">
             Think critically. Verify responsibly. Share wisely.
           </p>
+
           <a href="#analyzer" className="text-sm font-bold text-teal-400 hover:text-white">
             Check a claim ↑
           </a>
