@@ -1,3 +1,4 @@
+import Login from './Login'
 import { useEffect, useState } from 'react'
 import {
   ArrowRight, BadgeCheck, BookOpen, CheckCircle2, ChevronRight, CircleAlert,
@@ -35,6 +36,9 @@ const modes = [
 ]
 
 function App() {
+    if (window.location.pathname === '/login') {
+    return <Login />
+  }
   const [mode, setMode] = useState<InputMode>('text')
   const [content, setContent] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
