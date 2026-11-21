@@ -94,7 +94,8 @@ function App() {
             <a className="nav-link" href="#features">Features</a>
             <a className="nav-link" href="#learn">Media literacy</a>
           </div>
-          <a href="#analyzer" className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition hover:-translate-y-0.5 hover:bg-teal-700">Check a claim <ArrowRight className="ml-1 inline" size={15} /></a>
+        <a href="/login" className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-bold text-slate-700">Log in</a>
+        <a href="#analyzer" className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition hover:-translate-y-0.5 hover:bg-teal-700">Check a claim <ArrowRight className="ml-1 inline" size={15} /></a>
         </nav>
 
         <header id="home" className="grid items-center gap-12 py-14 lg:grid-cols-[1.05fr_.95fr] lg:py-20">
