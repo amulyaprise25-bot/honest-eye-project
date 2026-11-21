@@ -163,8 +163,8 @@ function HomePage()
   )
 }
 
-export default App{
 function App() {
   return window.location.pathname === '/login' ? <Login /> : <HomePage />
 }
-}
+
+export default App
