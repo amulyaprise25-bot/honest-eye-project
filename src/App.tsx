@@ -1,440 +1,454 @@
 
 import { useState } from 'react'
-import {
-  ShieldCheck,
-  Search,
-  Upload,
-  FileText,
-  Image,
-  ArrowRight,
-  CheckCircle,
-  XCircle,
-  Loader2,
-  Eye,
-  Lock,
-  Zap,
-  BookOpen,
-  Info
-} from 'lucide-react'
 import Login from './Login'
 
-type InputMode = 'text' | 'image'
-
-type AnalysisResult = {
-  verdict?: string
-  confidence?: number
+interface AnalysisResult {
+  error?: string
+  score?: number
   explanation?: string
-  summary?: string
-  sources?: string[]
-  [key: string]: unknown
+  redFlags?: string[]
+  trustedSources?: string[]
 }
+
+type InputMode = 'text' | 'url' | 'image'
 
 function HomePage() {
   const [mode, setMode] = useState<InputMode>('text')
-  const [claim, setClaim] = useState('')
-  const [file, setFile] = useState<File | null>(null)
-  const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [content, setContent] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [result, setResult] = useState<AnalysisResult | null>(null)
+
+  const handleImageChange = (file: File | null) => {
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview)
+    }
+
+    setImageFile(file)
+    setContent('')
+
+    if (file) {
+      setImagePreview(URL.createObjectURL(file))
+    } else {
+      setImagePreview(null)
+    }
+  }
 
   const handleAnalyze = async () => {
-    if (mode === 'text' && !claim.trim()) {
-      setError('Please enter a claim first.')
-      return
-    }
-
-    if (mode === 'image' && !file) {
-      setError('Please upload an image first.')
-      return
-    }
+    if ((mode === 'text' || mode === 'url') && !content.trim()) return
+    if (mode === 'image' && !imageFile) return
 
     setLoading(true)
-    setError('')
     setResult(null)
 
     try {
-      const response = await fetch('/api/misinfo', {
-        method: 'POST',
-        headers: mode === 'text'
-          ? { 'Content-Type': 'application/json' }
-          : undefined,
-        body: mode === 'text'
-          ? JSON.stringify({ text: claim })
-          : (() => {
-              const formData = new FormData()
-              if (file) formData.append('image', file)
-              return formData
-            })()
-      })
+      const apiUrl = import.meta.env.VITE_API_URL?.trim() || 'http://localhost:5000'
+      const endpoint = `${apiUrl}/api/misinfo`
+      const payload = { type: mode, content: content.trim() }
 
-      const data = await response.json()
+      let response: Response
 
-      if (!response.ok) {
-        throw new Error(data.error || data.message || 'Analysis failed.')
+      if (mode === 'image') {
+        const formData = new FormData()
+        formData.append('type', 'image')
+        formData.append('image', imageFile as Blob)
+
+        response = await fetch(endpoint, {
+          method: 'POST',
+          body: formData,
+        })
+      } else {
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        })
       }
 
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
       setResult(data)
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Something went wrong. Please try again.'
-      )
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : 'Failed to analyze content. Please try again.'
+
+      console.error('Error analyzing content:', message)
+
+      setResult({
+        error: message,
+        explanation: 'Failed to analyze content. Please try again.',
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  const verdict = String(result?.verdict || 'Analysis completed')
-  const explanation = String(
-    result?.explanation || result?.summary || 'No explanation was provided.'
-  )
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <a href="/" className="flex items-center gap-2">
-            <div className="rounded-xl bg-teal-600 p-2 text-white">
-              <ShieldCheck size={24} />
-            </div>
-            <span className="text-2xl font-black tracking-tight">
-              honest<span className="text-teal-600">eye</span>
-            </span>
-          </a>
+    <div className="relative min-h-screen bg-slate-950 text-slate-100">
+      <div className="absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 opacity-95" />
 
-          <div className="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex">
-            <a href="#analyzer" className="hover:text-teal-600">Fact Check</a>
-            <a href="#how-it-works" className="hover:text-teal-600">How it works</a>
-            <a href="#features" className="hover:text-teal-600">Features</a>
-          </div>
+      <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
 
-          <div className="flex items-center gap-3">
+        <header className="mb-12 rounded-[3rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl">
+          <div className="mb-6 flex justify-end">
             <a
               href="/login"
-              className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-bold text-slate-700 hover:border-teal-600 hover:text-teal-700"
+              className="rounded-full bg-indigo-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400"
             >
               Log in
             </a>
-            <a
-              href="#analyzer"
-              className="hidden rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-700 sm:inline-block"
-            >
-              Check a claim <ArrowRight className="ml-1 inline" size={15} />
-            </a>
-          </div>
-        </div>
-      </nav>
-
-      <main>
-        <section className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-20 md:grid-cols-2 md:py-28">
-          <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-teal-100 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-700">
-              <ShieldCheck size={17} />
-              Your trusted fact-checking assistant
-            </div>
-
-            <h1 className="text-5xl font-black leading-tight tracking-tight md:text-6xl">
-              See the truth.
-              <br />
-              <span className="text-teal-600">Stop the fake.</span>
-            </h1>
-
-            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">
-              In a world full of misinformation, make informed decisions.
-              Check suspicious claims and images with Honest Eye.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-4">
-              <a
-                href="#analyzer"
-                className="rounded-full bg-teal-600 px-7 py-4 font-bold text-white shadow-lg shadow-teal-600/20 hover:bg-teal-700"
-              >
-                Start fact checking <ArrowRight className="ml-2 inline" size={18} />
-              </a>
-              <a
-                href="#how-it-works"
-                className="rounded-full border border-slate-300 px-7 py-4 font-bold text-slate-700 hover:bg-white"
-              >
-                Learn more
-              </a>
-            </div>
-
-            <div className="mt-10 flex flex-wrap gap-6 text-sm text-slate-500">
-              <span className="flex items-center gap-2">
-                <CheckCircle className="text-teal-600" size={17} />
-                Easy to use
-              </span>
-              <span className="flex items-center gap-2">
-                <Lock className="text-teal-600" size={17} />
-                Simple analysis
-              </span>
-            </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60">
-            <div className="mb-6 flex items-center justify-between">
+          <div className="grid gap-8 lg:grid-cols-[1.3fr_0.9fr] lg:items-center">
+            <div className="space-y-6">
+              <span className="inline-flex rounded-full bg-indigo-500/15 px-4 py-2 text-sm font-semibold uppercase tracking-[0.35em] text-indigo-200">
+                HONEST EYE
+              </span>
+
+              <h1 className="text-5xl font-semibold tracking-tight text-white sm:text-6xl">
+                Analyze credibility in seconds.
+              </h1>
+
+              <p className="max-w-2xl text-lg leading-8 text-slate-300">
+                Verify claims with AI-powered text, URL, and image analysis.
+                Get a credibility score, red flag alerts, and trusted source
+                guidance instantly.
+              </p>
+            </div>
+
+            <div className="rounded-[2.5rem] bg-slate-900/80 p-8 shadow-xl shadow-indigo-950/30 ring-1 ring-white/10">
+              <p className="text-sm uppercase tracking-[0.35em] text-indigo-300">
+                What you get
+              </p>
+
+              <ul className="mt-6 space-y-4 text-sm leading-7 text-slate-300">
+                <li>• Instant misinformation scoring</li>
+                <li>• Adaptive text, link, and image analysis</li>
+                <li>• Actionable red flag insights</li>
+              </ul>
+
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-3xl bg-indigo-500/10 p-4">
+                  <p className="text-2xl font-semibold text-white">98%</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                    Accuracy
+                  </p>
+                </div>
+
+                <div className="rounded-3xl bg-slate-900/80 p-4">
+                  <p className="text-2xl font-semibold text-white">3 modes</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                    Text, URL, Image
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+          <section className="rounded-[3rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-bold text-teal-600">HONEST EYE</p>
-                <h2 className="mt-1 text-2xl font-black">Truth matters.</h2>
-              </div>
-              <div className="rounded-2xl bg-teal-50 p-4 text-teal-700">
-                <Eye size={34} />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <div className="flex items-center gap-3">
-                  <Search className="text-teal-600" />
-                  <div>
-                    <p className="font-bold">Check information</p>
-                    <p className="text-sm text-slate-500">Examine suspicious claims</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <div className="flex items-center gap-3">
-                  <Image className="text-teal-600" />
-                  <div>
-                    <p className="font-bold">Analyse images</p>
-                    <p className="text-sm text-slate-500">Submit an image for checking</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="text-teal-600" />
-                  <div>
-                    <p className="font-bold">Understand the result</p>
-                    <p className="text-sm text-slate-500">Review the analysis explanation</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="analyzer" className="bg-slate-900 px-6 py-20 text-white">
-          <div className="mx-auto max-w-4xl">
-            <div className="mb-10 text-center">
-              <p className="font-bold uppercase tracking-widest text-teal-400">
-                Fact checking tool
-              </p>
-              <h2 className="mt-3 text-4xl font-black">Check before you believe.</h2>
-              <p className="mt-4 text-slate-300">
-                Enter a claim or upload an image to begin your analysis.
-              </p>
-            </div>
-
-            <div className="rounded-3xl bg-white p-6 text-slate-900 shadow-2xl md:p-9">
-              <div className="mb-6 grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => {
-                    setMode('text')
-                    setError('')
-                    setResult(null)
-                  }}
-                  className={`flex items-center justify-center gap-2 rounded-xl px-4 py-4 font-bold ${
-                    mode === 'text'
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  <FileText size={19} /> Text claim
-                </button>
-
-                <button
-                  onClick={() => {
-                    setMode('image')
-                    setError('')
-                    setResult(null)
-                  }}
-                  className={`flex items-center justify-center gap-2 rounded-xl px-4 py-4 font-bold ${
-                    mode === 'image'
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  <Image size={19} /> Image check
-                </button>
-              </div>
-
-              {mode === 'text' ? (
-                <textarea
-                  value={claim}
-                  onChange={e => setClaim(e.target.value)}
-                  placeholder="Paste or type the claim you want to verify..."
-                  rows={6}
-                  className="w-full resize-none rounded-2xl border border-slate-200 p-5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
-                />
-              ) : (
-                <label className="flex min-h-52 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center hover:border-teal-500">
-                  <Upload size={38} className="mb-4 text-teal-600" />
-                  <span className="font-bold">Click to upload an image</span>
-                  <span className="mt-2 text-sm text-slate-500">
-                    Choose an image from your device
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={e => setFile(e.target.files?.[0] || null)}
-                  />
-                  {file && (
-                    <span className="mt-4 text-sm font-semibold text-teal-700">
-                      Selected: {file.name}
-                    </span>
-                  )}
-                </label>
-              )}
-
-              {error && (
-                <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">
-                  {error}
+                <p className="text-sm uppercase tracking-[0.35em] text-indigo-300">
+                  Analysis mode
                 </p>
-              )}
+                <h2 className="mt-3 text-3xl font-semibold text-white">
+                  Start a new review
+                </h2>
+              </div>
 
-              <button
-                onClick={handleAnalyze}
-                disabled={loading}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-4 font-bold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="animate-spin" size={20} />
-                    Analysing...
-                  </>
-                ) : (
-                  <>
-                    <Search size={20} />
-                    Analyse now
-                  </>
-                )}
-              </button>
+              <div className="rounded-full bg-slate-800/80 px-4 py-2 text-sm text-slate-300 ring-1 ring-white/10">
+                {mode === 'text' ? 'Text analysis' : mode === 'url' ? 'URL analysis' : 'Image analysis'}
+              </div>
+            </div>
 
-              {result && (
-                <div className="mt-7 rounded-2xl border border-slate-200 p-5">
-                  <div className="flex items-center gap-3">
-                    {verdict.toLowerCase().includes('false') ||
-                    verdict.toLowerCase().includes('fake') ? (
-                      <XCircle className="text-red-600" size={28} />
-                    ) : verdict.toLowerCase().includes('true') ? (
-                      <CheckCircle className="text-green-600" size={28} />
-                    ) : (
-                      <Info className="text-teal-600" size={28} />
-                    )}
-                    <h3 className="text-xl font-black">{verdict}</h3>
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              {(['text', 'url', 'image'] as InputMode[]).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => {
+                    setMode(item)
+                    setResult(null)
+                    setContent('')
+                    handleImageChange(null)
+                  }}
+                  className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition ${
+                    mode === item
+                      ? 'border-transparent bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/30'
+                      : 'border-white/10 bg-slate-950 text-slate-300 hover:border-white/20 hover:bg-slate-900'
+                  }`}
+                >
+                  {item === 'text' ? 'Text' : item === 'url' ? 'URL' : 'Image'}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-8 rounded-[2.5rem] border border-white/10 bg-slate-950/80 p-6 shadow-inner shadow-white/5">
+              {mode === 'image' ? (
+                <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-semibold text-slate-200">
+                        Upload image
+                      </label>
+                      <p className="mt-2 text-sm text-slate-400">
+                        Select an image for the AI to inspect the text and claim context.
+                      </p>
+                    </div>
+
+                    <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-950/70 p-8 text-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] ?? null
+                          handleImageChange(file)
+                        }}
+                        className="mx-auto block w-full cursor-pointer text-sm text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-indigo-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-400"
+                      />
+
+                      <p className="mt-4 text-sm text-slate-500">
+                        PNG, JPG, or WEBP. Max 10MB.
+                      </p>
+                    </div>
                   </div>
 
-                  <p className="mt-4 leading-7 text-slate-600">{explanation}</p>
-
-                  {result.confidence !== undefined && (
-                    <p className="mt-3 text-sm font-semibold text-slate-500">
-                      Confidence: {String(result.confidence)}%
+                  <div className="rounded-[2rem] border border-white/10 bg-slate-900 p-4">
+                    <p className="text-sm font-semibold text-slate-200">
+                      Preview
                     </p>
-                  )}
+
+                    {imagePreview ? (
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="mt-4 h-64 w-full rounded-[1.75rem] object-cover"
+                      />
+                    ) : (
+                      <div className="mt-4 flex h-64 items-center justify-center rounded-[1.75rem] border border-dashed border-slate-700 bg-slate-950 text-sm text-slate-500">
+                        No image selected
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between gap-4">
+                    <label className="text-sm font-semibold text-slate-200">
+                      {mode === 'text' ? 'Enter text' : 'Enter URL'}
+                    </label>
+
+                    <span className="text-xs uppercase tracking-[0.35em] text-slate-500">
+                      Paste your content
+                    </span>
+                  </div>
+
+                  <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    rows={mode === 'url' ? 4 : 10}
+                    placeholder={
+                      mode === 'text'
+                        ? 'Paste article text, social media post, or claim content here...'
+                        : 'Paste the link to the article or post you want analyzed...'
+                    }
+                    className="mt-4 min-h-[220px] w-full rounded-[2rem] border border-white/10 bg-slate-950/80 px-5 py-5 text-slate-100 shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  />
                 </div>
               )}
+
+              <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-400">
+                  {mode === 'image'
+                    ? 'Upload an image to detect misleading visuals and hidden claims.'
+                    : mode === 'url'
+                    ? 'Analyze a website URL for credibility and misinformation risk.'
+                    : 'Analyze raw text for misinformation signals and credibility.'}
+                </p>
+
+                <button
+                  onClick={handleAnalyze}
+                  disabled={loading || (mode !== 'image' ? !content.trim() : !imageFile)}
+                  className="inline-flex items-center justify-center rounded-full bg-indigo-500 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:bg-slate-700"
+                >
+                  {loading ? 'Analyzing...' : 'Analyze now'}
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section id="how-it-works" className="mx-auto max-w-7xl px-6 py-20">
-          <div className="text-center">
-            <p className="font-bold uppercase tracking-widest text-teal-600">
-              Simple process
-            </p>
-            <h2 className="mt-3 text-4xl font-black">How it works</h2>
-          </div>
+          <aside className="rounded-[3rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm uppercase tracking-[0.35em] text-indigo-300">
+                  Live verdict
+                </p>
+                <h2 className="mt-3 text-3xl font-semibold text-white">
+                  Analysis panel
+                </h2>
+              </div>
 
-          <div className="mt-12 grid gap-7 md:grid-cols-3">
-            {[
-              {
-                icon: Upload,
-                title: '1. Submit',
-                description: 'Enter a suspicious claim or upload an image.'
-              },
-              {
-                icon: Search,
-                title: '2. Analyse',
-                description: 'Let the available analysis service examine your input.'
-              },
-              {
-                icon: CheckCircle,
-                title: '3. Understand',
-                description: 'Read the result and its explanation before deciding.'
-              }
-            ].map((item, index) => (
-              <div key={index} className="rounded-3xl border border-slate-200 bg-white p-8">
-                <div className="mb-5 inline-flex rounded-2xl bg-teal-50 p-4 text-teal-700">
-                  <item.icon size={28} />
+              <div className="rounded-full bg-slate-950/80 px-4 py-2 text-sm text-slate-300 ring-1 ring-white/10">
+                {result ? 'Ready' : 'Waiting'}
+              </div>
+            </div>
+
+            <div className="mt-8 space-y-6">
+              <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
+                      credibility score
+                    </p>
+
+                    <p className={`mt-3 text-4xl font-semibold ${
+                      result?.score !== undefined
+                        ? result.score >= 70
+                          ? 'text-emerald-400'
+                          : result.score >= 40
+                          ? 'text-amber-400'
+                          : 'text-rose-400'
+                        : 'text-slate-400'
+                    }`}>
+                      {result?.score !== undefined ? `${result.score}/100` : '-- /100'}
+                    </p>
+                  </div>
+
+                  <div className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                    result?.score !== undefined
+                      ? result.score >= 70
+                        ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/30'
+                        : result.score >= 40
+                        ? 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/30'
+                        : 'bg-rose-500/15 text-rose-300 ring-1 ring-rose-400/30'
+                      : 'bg-slate-800 text-slate-300'
+                  }`}>
+                    {result?.score !== undefined
+                      ? result.score >= 70
+                        ? 'NOT FAKE'
+                        : result.score >= 40
+                        ? 'REVIEW NEEDED'
+                        : 'FAKE NEWS'
+                      : 'AWAITING INPUT'}
+                  </div>
                 </div>
-                <h3 className="text-xl font-black">{item.title}</h3>
-                <p className="mt-3 leading-7 text-slate-600">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </section>
 
-        <section id="features" className="bg-teal-50 px-6 py-20">
-          <div className="mx-auto max-w-7xl">
-            <div className="text-center">
-              <p className="font-bold uppercase tracking-widest text-teal-700">
-                Why Honest Eye?
-              </p>
-              <h2 className="mt-3 text-4xl font-black">Think before you share.</h2>
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-slate-800">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      result?.score !== undefined
+                        ? result.score >= 70
+                          ? 'bg-emerald-400'
+                          : result.score >= 40
+                          ? 'bg-amber-400'
+                          : 'bg-rose-400'
+                        : 'bg-slate-700'
+                    }`}
+                    style={{
+                      width: `${Math.max(0, Math.min(100, result?.score ?? 0))}%`
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-5">
+                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
+                  status
+                </p>
+
+                <p className="mt-3 text-base leading-7 text-slate-300">
+                  {result?.error
+                    ? 'The analysis failed. Try again or use different input.'
+                    : result
+                    ? 'Analysis complete. Review the findings below.'
+                    : 'Submit your first input to generate a credibility assessment.'}
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-5">
+                  <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
+                    Focus area
+                  </p>
+                  <p className="mt-3 text-base text-slate-300">
+                    {mode === 'image' ? 'Visual claim detection' : mode === 'url' ? 'Link credibility' : 'Text reliability'}
+                  </p>
+                </div>
+
+                <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-5">
+                  <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
+                    Recommended action
+                  </p>
+                  <p className="mt-3 text-base text-slate-300">
+                    {result?.error ? 'Request new analysis' : 'Review results and verify sources'}
+                  </p>
+                </div>
+              </div>
             </div>
+          </aside>
+        </main>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              <div className="rounded-2xl bg-white p-7">
-                <Zap className="text-teal-600" size={30} />
-                <h3 className="mt-4 text-xl font-bold">Simple experience</h3>
-                <p className="mt-2 text-slate-600">
-                  A straightforward way to submit information for checking.
+        {result && (
+          <section className="mt-10 rounded-[3rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl">
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="rounded-[2rem] bg-slate-950/80 p-6">
+                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
+                  Analysis details
+                </p>
+                <p className="mt-4 text-sm leading-7 text-slate-300">
+                  {result.explanation || 'Detailed insight will appear here once analysis completes.'}
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white p-7">
-                <ShieldCheck className="text-teal-600" size={30} />
-                <h3 className="mt-4 text-xl font-bold">Awareness</h3>
-                <p className="mt-2 text-slate-600">
-                  Encourages users to question information before sharing it.
+              <div className="rounded-[2rem] bg-slate-950/80 p-6">
+                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
+                  Red flags
                 </p>
+
+                {result.redFlags && result.redFlags.length > 0 ? (
+                  <ul className="mt-4 space-y-3 text-sm text-amber-200">
+                    {result.redFlags.map((flag, index) => (
+                      <li key={index}>• {flag}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-4 text-sm text-slate-400">
+                    No significant red flags detected.
+                  </p>
+                )}
               </div>
 
-              <div className="rounded-2xl bg-white p-7">
-                <BookOpen className="text-teal-600" size={30} />
-                <h3 className="mt-4 text-xl font-bold">Learn and verify</h3>
-                <p className="mt-2 text-slate-600">
-                  Understand why checking information matters.
+              <div className="rounded-[2rem] bg-slate-950/80 p-6">
+                <p className="text-sm uppercase tracking-[0.35em] text-slate-500">
+                  Trusted sources
                 </p>
+
+                {result.trustedSources && result.trustedSources.length > 0 ? (
+                  <ul className="mt-4 space-y-3 text-sm text-emerald-200">
+                    {result.trustedSources.map((source, index) => (
+                      <li key={index}>• {source}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-4 text-sm text-slate-400">
+                    No trusted sources available for this analysis.
+                  </p>
+                )}
               </div>
             </div>
-          </div>
-        </section>
-      </main>
-
-      <footer className="bg-slate-950 px-6 py-10 text-white">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 md:flex-row">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="text-teal-400" size={25} />
-            <span className="text-xl font-black">
-              honest<span className="text-teal-400">eye</span>
-            </span>
-          </div>
-
-          <p className="text-sm text-slate-400">
-            Think critically. Verify responsibly. Share wisely.
-          </p>
-
-          <a href="#analyzer" className="text-sm font-bold text-teal-400 hover:text-white">
-            Check a claim ↑
-          </a>
-        </div>
-      </footer>
+          </section>
+        )}
+      </div>
     </div>
   )
 }
