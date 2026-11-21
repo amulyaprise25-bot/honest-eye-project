@@ -35,10 +35,8 @@ const modes = [
   { id: 'image' as const, label: 'Image', detail: 'Upload a screenshot', icon: FileImage },
 ]
 
-function App() {
-    if (window.location.pathname === '/login') {
-    return <Login />
-  }
+function HomePage() 
+{
   const [mode, setMode] = useState<InputMode>('text')
   const [content, setContent] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
