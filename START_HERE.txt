@@ -1,0 +1,25 @@
+HONEST EYE - UPDATED FRONTEND
+
+This copy contains a refreshed, professional homepage and analysis workspace.
+The existing backend API contract is preserved: POST /api/misinfo and GET /health.
+
+RUN LOCALLY ON WINDOWS
+
+Terminal 1 - Backend:
+  cd backend
+  npm install
+  npm start
+Keep this terminal open. It should say the backend is running on port 5000.
+
+Terminal 2 - Frontend (open at the main HONEST-EYE-main folder, NOT src):
+  npm install
+  npm run dev
+Open the local URL Vite prints (normally http://localhost:8080).
+
+IMPORTANT
+- Do not run npm commands from the src folder.
+- Do not close the backend terminal while using the website.
+- Add your API keys only to backend/.env. Never share that file publicly.
+- The ZIP supplied for this update did not include app.py or an ML model; SHAP/LIME cannot be integrated until those actual model files are supplied.
+- Google Fact Check Tools API is not yet connected in this uploaded code. It is a separate next implementation step.
+- AI scores are indicators, not proof. Verify important claims using primary sources.

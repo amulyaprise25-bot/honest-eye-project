@@ -1,0 +1,19 @@
+{
+  "name": "honest-eye-backend",
+  "version": "1.0.0",
+  "description": "Honest Eye - Backend API service for misinformation analysis",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "vercel-build": "echo 'Backend ready'"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.7",
+    "express": "^5.2.1",
+    "multer": "^1.4.5-lts.1",
+    "tesseract.js": "^7.0.0"
+  }
+}
