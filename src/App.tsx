@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react'
 import Login from './Login'
 
@@ -186,7 +185,7 @@ function App() {
                   }}
                   className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition ${
                     mode === item
-                      ? 'border-transparent bg-gradient-to-r from-purplpe-500 to-purple-500 text-white shadow-lg shadow-purple-500/30'
+                      ? 'border-transparent bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/30'
                       : 'border-white/10 bg-slate-950 text-slate-300 hover:border-white/20 hover:bg-slate-900'
                   }`}
                 >
@@ -247,8 +246,8 @@ function App() {
                         ? 'Paste article text, social media post, or claim content here...'
                         : 'Paste the link to the article or post you want analyzed...'
                     }
-                    className="mt-4 min-h-[220px] w-full rounded-[2rem] border border-white/10 bg-slate-950/80 px-5 py-5 text-slate-100 shadow-inner shadow-black/20 placeholder:text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                  /> 
+                    className="mt-4 min-h-[220px] w-full rounded-[2rem] border border-white/10 bg-slate-950/80 px-5 py-5 text-slate-100 shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  />
                 </div>
               )}
 
@@ -290,7 +289,7 @@ function App() {
                     <p className={`mt-3 text-4xl font-semibold ${
                       result?.score !== undefined
                         ? result.score >= 70
-                          ? 'text-purple-400'
+                          ? 'text-emerald-400'
                           : result.score >= 40
                           ? 'text-amber-400'
                           : 'text-rose-400'
@@ -302,7 +301,7 @@ function App() {
                   <div className={`rounded-full px-4 py-2 text-sm font-semibold ${
                     result?.score !== undefined
                       ? result.score >= 70
-                        ? 'bg-purple-500/15 text-purple-300 ring-1 ring-purple-400/30'
+                        ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/30'
                         : result.score >= 40
                         ? 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/30'
                         : 'bg-rose-500/15 text-rose-300 ring-1 ring-rose-400/30'
@@ -322,7 +321,7 @@ function App() {
                     className={`h-full rounded-full transition-all duration-500 ${
                       result?.score !== undefined
                         ? result.score >= 70
-                          ? 'bg-purple-400'
+                          ? 'bg-emerald-400'
                           : result.score >= 40
                           ? 'bg-amber-400'
                           : 'bg-rose-400'
@@ -380,7 +379,7 @@ function App() {
               <div className="rounded-[2rem] bg-slate-950/80 p-6">
                 <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Trusted sources</p>
                 {result.trustedSources && result.trustedSources.length > 0 ? (
-                  <ul className="mt-4 space-y-3 text-sm text-PURPLE-500">
+                  <ul className="mt-4 space-y-3 text-sm text-emerald-200">
                     {result.trustedSources.map((source, index) => (
                       <li key={index}>• {source}</li>
                     ))}
