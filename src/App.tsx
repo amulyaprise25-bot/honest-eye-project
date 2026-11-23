@@ -321,7 +321,7 @@ function App() {
                     className={`h-full rounded-full transition-all duration-500 ${
                       result?.score !== undefined
                         ? result.score >= 70
-                          ? 'bg-emerald-400'
+                          ? 'bg-purple-400'
                           : result.score >= 40
                           ? 'bg-amber-400'
                           : 'bg-rose-400'
