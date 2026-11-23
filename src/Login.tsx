@@ -83,7 +83,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
           <button
             type="submit"
-            className="w-full rounded-full bg-gradient-to-r from-indigo-500 to-red-500 py-3.5 text-sm font-semibold text-red shadow-lg shadow-white-500/25 transition hover:from-indigo-400 hover:to-violet-400"
+            className="w-full rounded-full bg-gradient-to-r from-red-500 to-red-500 py-3.5 text-sm font-semibold text-red shadow-lg shadow-white-500/25 transition hover:from-indigo-400 hover:to-violet-400"
           >
             {isSignUp ? 'Create Account' : 'Sign In'}
           </button>
