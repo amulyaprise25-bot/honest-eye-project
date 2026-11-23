@@ -301,10 +301,10 @@ function App() {
                   <div className={`rounded-full px-4 py-2 text-sm font-semibold ${
                     result?.score !== undefined
                       ? result.score >= 70
-                        ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/30'
+                        ? 'bg-blue-500/15 text-blue-300 ring-1 ring-blue-400/30'
                         : result.score >= 40
-                        ? 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/30'
-                        : 'bg-rose-500/15 text-rose-300 ring-1 ring-rose-400/30'
+                        ? 'bg-orange-500/15 text-orange-300 ring-1 ring-orange-400/30'
+                        : 'bg-pink-500/15 text-pink-300 ring-1 ring-pink-400/30'
                       : 'bg-slate-800 text-slate-300'
                   }`}>
                     {result?.score !== undefined
@@ -321,10 +321,10 @@ function App() {
                     className={`h-full rounded-full transition-all duration-500 ${
                       result?.score !== undefined
                         ? result.score >= 70
-                          ? 'bg-emerald-400'
+                          ? 'bg-blue-400'
                           : result.score >= 40
-                          ? 'bg-amber-400'
-                          : 'bg-rose-400'
+                          ? 'bg-orange-400'
+                          : 'bg-pink-400'
                         : 'bg-slate-700'
                     }`}
                     style={{ width: `${result?.score ?? 0}%` }}
