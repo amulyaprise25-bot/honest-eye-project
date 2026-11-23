@@ -83,7 +83,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
           <button
             type="submit"
-            className="w-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-400 hover:to-violet-400"
+            className="w-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:from-indigo-400 hover:to-violet-400"
           >
             {isSignUp ? 'Create Account' : 'Sign In'}
           </button>
@@ -96,7 +96,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               setIsSignUp(!isSignUp)
               setError('')
             }}
-            className="text-sm text-slate-400 transition hover:text-indigo-300"
+            className="text-sm text-slate-400 transition hover:text-violet-500"
           >
             {isSignUp
               ? 'Already have an account? Sign in'
