@@ -247,7 +247,7 @@ function App() {
                         : 'Paste the link to the article or post you want analyzed...'
                     }
                     className="mt-4 min-h-[220px] w-full rounded-[2rem] border border-white/10 bg-slate-950/80 px-5 py-5 text-slate-100 shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                  />
+                  /> majhsk
                 </div>
               )}
 
