@@ -185,7 +185,7 @@ function App() {
                   }}
                   className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition ${
                     mode === item
-                      ? 'border-transparent bg-gradient-to-r from-red-500 to-violet-500 text-white shadow-lg shadow-indigo-500/30'
+                      ? 'border-transparent bg-gradient-to-r from-red-500 to-red-500 text-white shadow-lg shadow-indigo-500/30'
                       : 'border-white/10 bg-slate-950 text-slate-300 hover:border-white/20 hover:bg-slate-900'
                   }`}
                 >
