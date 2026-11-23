@@ -379,7 +379,7 @@ function App() {
               <div className="rounded-[2rem] bg-slate-950/80 p-6">
                 <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Trusted sources</p>
                 {result.trustedSources && result.trustedSources.length > 0 ? (
-                  <ul className="mt-4 space-y-3 text-sm text-emerald-200">
+                  <ul className="mt-4 space-y-3 text-sm text-PURPLE-500">
                     {result.trustedSources.map((source, index) => (
                       <li key={index}>• {source}</li>
                     ))}
