@@ -96,7 +96,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               setIsSignUp(!isSignUp)
               setError('')
             }}
-            className="text-sm text-slate-400 transition hover:text-violet-500"
+            className="text-sm text-slate-400 transition hover:text-red-500"
           >
             {isSignUp
               ? 'Already have an account? Sign in'
